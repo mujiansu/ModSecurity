@@ -88,30 +88,14 @@ class REQUEST_STORED_CONTEXT : public IHttpStoredContext
 
 //----------------------------------------------------------------------------
 
-char *GetIpAddr(apr_pool_t *pool, PSOCKADDR pAddr)
+char* GetIpAddr(apr_pool_t* pool, PSOCKADDR pAddr)
 {
-	const char *format = "%15[0-9.]:%5[0-9]";
-	char ip[16] = { 0 };  // ip4 addresses have max len 15
-	char port[6] = { 0 }; // port numbers are 16bit, ie 5 digits max
-
-	DWORD len = 50;
-	char *buf = (char *)apr_palloc(pool, len);
-
-	if(buf == NULL)
+	DWORD addrSize = pAddr->sa_family == AF_INET ? sizeof SOCKADDR_IN : sizeof SOCKADDR_IN6;
+	char* buf = (char*)apr_palloc(pool, NI_MAXHOST);
+	if (buf == NULL)
 		return "";
-
 	buf[0] = 0;
-
-	WSAAddressToString(pAddr, sizeof(SOCKADDR), NULL, buf, &len);
-
-	// test for IPV4 with port on the end
-	if (sscanf(buf, format, ip, port) == 2) {
-		// IPV4 but with port - remove the port
-		char* input = ":";
-		char* ipv4 = strtok(buf, input);
-		return ipv4;
-	}
-
+	GetNameInfo(pAddr, addrSize, buf, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 	return buf;
 }
 
